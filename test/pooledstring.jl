@@ -61,6 +61,9 @@ a = pstring("x", "y", 2)
 ##
 ##############################################################################
 
+@test pstring("a") < pstring("b")
+@test pstring("a") < "b"
+
 a = convert(ASCIIString, pstring("hello"))
 @test isa(a, ASCIIString)
 @test a == "hello"
@@ -175,5 +178,169 @@ y = similar(x, 2, 5)
 z = [x y]
 @test size(z) == (2, 8)
 @test typeof(x) == typeof(z)
+
+##############################################################################
+##
+## Re-pooling, condensing, and re-ordering methods
+##
+##############################################################################
+
+x = PooledStringArray(Pool(), ["a", "b", "c"])
+y = PooledStringArray(Pool(), ["a", "x", "y"])
+z = repool(x, y.pool)
+@test x == z
+@test length(y.pool) == 5
+
+x = PooledStringArray(["a", "b", "c"])
+z = repool(x, Pool())
+@test x == z
+@test length(z.pool) == 3
+
+x = PooledStringArray(Pool(), ["a", "b", "c"])
+x = PooledStringArray(x.pool, ["x23", "y23", "z23"])
+z = repool(x)
+@test x == z
+
+##############################################################################
+##
+## PooledStringVector Base methods
+##
+##############################################################################
+
+v = [pstring("a"), pstring("b"), pstring("c")]
+psv = PooledStringArray(v)
+
+v1 = push!(copy(v), pstring("x"))
+psv1 = push!(copy(psv), "x")
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = copy(v)
+psv1 = copy(psv)
+x = pop!(v1)
+y = pop!(psv1)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+@test x == y
+@test isa(x, PooledString{UTF8String,UInt})
+@test isa(y, PooledString{UTF8String,UInt})
+
+v1 = unshift!(copy(v), pstring("x"))
+psv1 = unshift!(copy(psv), "x")
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = unshift!(copy(v), pstring("x"), pstring("y"))
+psv1 = unshift!(copy(psv), "x", "y")
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = copy(v)
+psv1 = copy(psv)
+x = shift!(v1)
+y = shift!(psv1)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+@test x == y
+@test isa(x, PooledString{UTF8String,UInt})
+@test isa(y, PooledString{UTF8String,UInt})
+
+# vc = copy(v)
+# psvc = copy(psv)
+# v1 = splice!(vc, 2, pstring("x"))
+# psv1 = splice!(psvc, 2, "x")
+# @test vc == psvc
+# @test isa(psvc, PooledStringArray{UTF8String,1,UInt})
+
+v1 = deleteat!(copy(v), 2)
+psv1 = deleteat!(copy(psv), 2)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = deleteat!(copy(v), 2)
+psv1 = deleteat!(copy(psv), 2)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = resize!(copy(v), 2)
+psv1 = resize!(copy(psv), 2)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+# v1 = resize!(copy(v), 5)     ## fails because of #undefs
+psv1 = resize!(copy(psv), 5)
+@test length(psv1) == 5
+@test isnull(psv1,5)
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = append!(copy(v), [pstring("a"), pstring("b")])
+psv1 = append!(copy(psv), ["a", "b"])
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = prepend!(copy(v), [pstring("a"), pstring("b")])
+psv1 = prepend!(copy(psv), ["a", "b"])
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = sizehint!(copy(v), 10)
+psv1 = sizehint!(copy(psv), 10)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = reverse!(copy(v))
+psv1 = reverse!(copy(psv))
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+v1 = reverse!(copy(v), 2, 3)
+psv1 = reverse!(copy(psv), 2, 3)
+@test v1 == psv1
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+
+##############################################################################
+##
+## NullableArray methods
+##
+##############################################################################
+
+v = fill(PooledString(), 3)
+psv = PooledStringArray(v)
+@test v == psv
+@test anynull(v)
+@test allnull(v)
+@test anynull(psv)
+@test allnull(psv)
+
+v = fill(pstring("a"), 3)
+psv = PooledStringArray(v)
+nullify!(psv, 2)
+@test anynull(psv)
+@test !allnull(psv)
+
+
+v = [pstring("a"), PooledString(), pstring("c")]
+@test anynull(v)
+@test !allnull(v)
+psv = PooledStringArray(v)
+@test anynull(psv)
+@test !allnull(psv)
+
+psv1 = dropnull(psv)
+@test length(psv1) == 2
+@test !anynull(psv1)
+@test !allnull(psv1)
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
+psv1 = padnull!(copy(psv), 1, 3)
+@test length(psv1) == 7
+@test anynull(psv1)
+@test isnull(psv1, 1)
+@test !isnull(psv1, 2)
+@test !isnull(psv1, 4)
+@test isnull(psv1, 5)
+@test isa(psv1, PooledStringArray{UTF8String,1,UInt})
+
 
 end # module

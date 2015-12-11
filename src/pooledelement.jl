@@ -2,7 +2,7 @@
 
 ##############################################################################
 ##
-## PooledElement -- not much for now until we see how PooledStrings work
+## PooledElement
 ##
 ##############################################################################
 
@@ -21,7 +21,29 @@ end
 PooledElement{S, T <: Unsigned, ID}(i::Integer, pool::Pool{S,T,ID}) = 
     PooledElement{S,T,ID}(convert(T, i), pool)
 
-# PooledElement{S}(x::S, pool::Pool{S}) = 
-#     PooledElement(get!(pool, x), pool)
-    
-## need a different name above to allow pooling of integers
+
+##############################################################################
+##
+## pelement constructor
+##
+##############################################################################
+
+function pelement{S, T <: Unsigned, ID}(pool::Pool{S,T,ID}, s::S) 
+    i = get!(pool, s)
+    PooledElement(i, pool)
+end
+
+
+##############################################################################
+##
+## PooledElement Base utilities
+##
+##############################################################################
+
+Base.isnull(x::PooledElement) = x.level == 0
+Base.isnull{T <: PooledElement}(x::AbstractArray{T}, I::Integer...) = x[I...].level == 0
+Base.isnull{T <: PooledElement}(x::AbstractArray{T}, iv::AbstractVector) = [x[i].level == 0 for i in iv]
+
+function NullableArrays.nullify!{S <: PooledElement}(X::AbstractArray{S}, I...)
+    X[I...].refs = 0
+end

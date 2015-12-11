@@ -1,8 +1,6 @@
 
 # TO DO's
 # - Add a slot for GC?
-# - Add a global dict for pool lookup?
-# - Add tests
 # - Add docstrings
 
 
@@ -17,6 +15,7 @@ module PooledElements
 
 using Compat
 using Docile
+using NullableArrays
 
 @document
 
@@ -34,6 +33,14 @@ export Pool,
 
 export pstring, repool
 
+# Re-exports from NullableArrays
+export dropnull,
+       anynull,
+       allnull,
+       nullify!,
+       padnull!,
+       padnull
+
 ##############################################################################
 ##
 ## Load files
@@ -43,6 +50,8 @@ export pstring, repool
 include("pool.jl")
 include("pooledelement.jl")
 include("pooledstring.jl")
+include("pooledstringarray.jl")
+include("pooledstringvector.jl")
 
 
 end # module

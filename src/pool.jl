@@ -10,7 +10,7 @@ immutable Pool{S, T <: Unsigned, ID}
     invindex::Dict{S,T}
 end
 
-
+ 
 ##############################################################################
 ##
 ## Constructors
@@ -85,7 +85,3 @@ end
 # Base.merge{S, T <: Unsigned}(a::Pool{S,T}, b::Pool{S,T}) = merge!(copy(a), b)
 Base.merge{S}(a::Pool{S}, b::Pool) = merge!(copy(a), b)
         
-function repool(idx, a::Pool, b::Pool)
-    for s in b.index
-    end
-end
