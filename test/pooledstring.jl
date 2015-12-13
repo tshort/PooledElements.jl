@@ -11,7 +11,7 @@ using Base.Test
 ##############################################################################
 
 a = PooledString()
-@test a == "__NA__"
+@test a == "__NULL__"
 
 p = Pool()
 push!(p, "hello")
@@ -71,6 +71,11 @@ a = convert(ASCIIString, pstring("hello"))
 @test endof(pstring("hello")) == endof("hello")
 
 @test string(pstring("hello", "world")) == "helloworld"
+
+p = Pool(UInt8, ["x", "y", "z"])
+a = pstring(p, "hello")
+@test isa(a, PooledString{ASCIIString,UInt8})
+@test levels(a) == ["x", "y", "z", "hello"]
 
 
 ##############################################################################
@@ -179,27 +184,42 @@ z = [x y]
 @test size(z) == (2, 8)
 @test typeof(x) == typeof(z)
 
+a = PooledStringArray(UInt8, ["x", "y", "z"])
+@test isa(a, PooledStringArray{ASCIIString,1,UInt8})
+@test levels(a) == ["x", "y", "z"]
+
 ##############################################################################
 ##
 ## Re-pooling, condensing, and re-ordering methods
 ##
 ##############################################################################
 
-x = PooledStringArray(Pool(), ["a", "b", "c"])
-y = PooledStringArray(Pool(), ["a", "x", "y"])
+x = PooledStringArray(Pool(), ["c", "a", "x"])
+y = PooledStringArray(Pool(), ["x", "a", "y"])
 z = repool(x, y.pool)
 @test x == z
-@test length(y.pool) == 5
+@test length(y.pool) == 4
+@test length(z.pool) == 4
+@test levels(z) == UTF8String["x", "a", "y", "c"]
 
-x = PooledStringArray(["a", "b", "c"])
-z = repool(x, Pool())
-@test x == z
-@test length(z.pool) == 3
+x = PooledStringArray(Pool(["x", "a"]), ["b", "c", "a"])
+y = repool(x, Pool())
+@test x == y
+@test length(y.pool) == 3
+z = repool(y, Pool(sort(levels(y))))
+@test levels(z) == UTF8String["a", "b", "c"]
+
+zz = rename(z, "a" => "apple", "b" => "banana")
+@test levels(z) == ["a", "b", "c"]
+@test levels(zz) == ["apple", "banana", "c"]
 
 x = PooledStringArray(Pool(), ["a", "b", "c"])
 x = PooledStringArray(x.pool, ["x23", "y23", "z23"])
 z = repool(x)
 @test x == z
+
+
+
 
 ##############################################################################
 ##

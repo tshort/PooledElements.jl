@@ -5,9 +5,9 @@
 ##
 ##############################################################################
 
-immutable PooledStringArray{S <: AbstractString, N, T <: Unsigned, ID} <: AbstractArray{PooledString{S,T,ID},N}
+immutable PooledStringArray{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool} <: AbstractArray{PooledString{S,T,P},N}
     refs::Array{T,N}
-    pool::Pool{S,T,ID}
+    pool::P
 end
 
 
@@ -17,25 +17,28 @@ end
 ##
 ##############################################################################
 
-function PooledStringArray{S <: AbstractString, N, T <: Unsigned, ID}(refs::Array{T,N}, p::Pool{S,T,ID})
-    PooledStringArray{S,N,T,ID}(refs, p)
+function PooledStringArray{S <: AbstractString, N, T <: Unsigned}(refs::Array{T,N}, p::AbstractPool{S,T})
+    PooledStringArray{S,N,T,typeof(p)}(refs, p)
 end
-function PooledStringArray{S <: AbstractString, T <: Unsigned}(p::Pool{S,T} = __GLOBAL_POOL__)
+function PooledStringArray{S <: AbstractString, T <: Unsigned}(p::AbstractPool{S,T} = __GLOBAL_POOL__)
     PooledStringArray(T[], p)
 end
-function PooledStringArray{S <: AbstractString, T <: Unsigned}(p::Pool{S,T}, dims::Integer...)
+function PooledStringArray{S <: AbstractString, T <: Unsigned}(p::AbstractPool{S,T}, dims::Integer...)
     PooledStringArray(zeros(T, dims), p)
 end
 function PooledStringArray(dims::Integer...)
     PooledStringArray(zeros(UInt, dims), __GLOBAL_POOL__)
 end
-function PooledStringArray{S <: AbstractString, N, T <: Unsigned, ID}(x::AbstractArray{PooledString{S,T,ID},N})
+function PooledStringArray{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool}(x::AbstractArray{PooledString{S,T,P},N})
     PooledStringArray(T[x[i].level for i in 1:length(x)], x[1].pool)
 end
 function PooledStringArray{S <: AbstractString}(x::AbstractArray{S})
     PooledStringArray(__GLOBAL_POOL__, x)
 end
-function PooledStringArray{S <: AbstractString}(pool::Pool, x::AbstractArray{S})
+function PooledStringArray{S <: AbstractString, T <: Unsigned}(t::Type{T}, x::AbstractArray{S})
+    PooledStringArray(Pool(T,S), x)
+end
+function PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractArray{S})
     psa = PooledStringArray(pool, size(x)...)
     for i in eachindex(x)
         psa[i] = x[i] 
@@ -46,18 +49,28 @@ end
 
 ##############################################################################
 ##
+## Utilities
+##
+##############################################################################
+
+levels(p::PooledStringArray) = levels(p.pool)
+rename(p::PooledStringArray, args...) = PooledStringArray(p.refs, rename(p.pool, args...))
+
+
+##############################################################################
+##
 ## PooledStringArray Base methods
 ##
 ##############################################################################
 
 Base.similar{S <: AbstractString}(A::PooledStringArray, ::Type{S}, dims::Dims) = PooledStringArray(A.pool, dims...)
 
-Base.linearindexing{S <: AbstractString, N, T <: Unsigned, ID}(::Type{PooledStringArray{S,N,T,ID}}) = Base.LinearFast()
+Base.linearindexing{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool}(::Type{PooledStringArray{S,N,T,P}}) = Base.LinearFast()
 
 Base.size(A::PooledStringArray) = size(A.refs)
 Base.size(A::PooledStringArray, d) = size(A.refs, d)
 
-@inline function Base.getindex{S <: AbstractString, N, T <: Unsigned, ID}(A::PooledStringArray{S,N,T,ID}, i::Integer...)
+@inline function Base.getindex{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool}(A::PooledStringArray{S,N,T,P}, i::Integer...)
     PooledString(A.refs[i...], A.pool) 
 end
 
@@ -65,7 +78,7 @@ end
     A.refs[i...] = get!(A.pool, s)
 end
 
-@inline function Base.setindex!{S <: AbstractString, N, T <: Unsigned, ID}(A::PooledStringArray{S,N,T,ID}, s::PooledString{S,T,ID}, i::Integer...)
+@inline function Base.setindex!{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool}(A::PooledStringArray{S,N,T,P}, s::PooledString{S,T,P}, i::Integer...)
     A.refs[i...] = s.level
 end
 
@@ -135,19 +148,32 @@ function uniqueints{U <: Integer, T}(vs::AbstractVector{U}, ::Type{T}, ex=extrem
 end
 function repool{S <: AbstractString, T <: Unsigned}(
                      a::PooledStringArray, 
-                     newpool::Pool{S,T}=__GLOBAL_POOL__)
+                     newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
     mapvec = Array(T, length(a.pool))
     uniquerefs = uniqueints(a.refs, UInt, (1,length(a.pool))) 
     for i in uniquerefs
         mapvec[i] = get!(newpool, a.pool.index[i])
     end
-    newrefs = mapvec[a.refs]
+    newrefs = zeros(T, length(a))
+    for i in 1:length(a)
+        j = a.refs[i]
+        if j != 0 
+            newrefs[i] = mapvec[j]
+        end
+    end
     PooledStringArray(newrefs, newpool)
 end
 ## If pools match, return the original:
 repool{S <: AbstractString, N, T <: Unsigned, ID}(
-            a::PooledStringArray{S,N,T,ID}, 
-            newpool::Pool{S,T,ID}=__GLOBAL_POOL__) = a
+            a::PooledStringArray{S,N,T,AbstractPool{S,T,ID}}, 
+            newpool::AbstractPool{S,T,ID}=__GLOBAL_POOL__) = a
+
+
+## More to think about:
+##
+## - rename(psa, "item 1" => "new name for item 1")
+## - unique(psa) - return Array or PSA?
+
 
 
 # asuint(x::PooledStringArray) = x.refs

@@ -16,6 +16,7 @@ module PooledElements
 using Compat
 using Docile
 using NullableArrays
+using JLD
 
 @document
 
@@ -31,7 +32,7 @@ export Pool,
        PooledString, 
        PooledStringArray
 
-export pstring, repool
+export pstring, repool, levels, rename
 
 # Re-exports from NullableArrays
 export dropnull,
@@ -52,6 +53,7 @@ include("pooledelement.jl")
 include("pooledstring.jl")
 include("pooledstringarray.jl")
 include("pooledstringvector.jl")
+include("jld.jl")
 
 
 end # module

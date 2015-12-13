@@ -6,9 +6,9 @@
 ##
 ##############################################################################
 
-immutable PooledElement{S, T <: Unsigned, ID}
+immutable PooledElement{S, T <: Unsigned, P <: AbstractPool}
     level::T
-    pool::Pool{S,T,ID}
+    pool::P
 end
 
 
@@ -18,8 +18,8 @@ end
 ##
 ##############################################################################
 
-PooledElement{S, T <: Unsigned, ID}(i::Integer, pool::Pool{S,T,ID}) = 
-    PooledElement{S,T,ID}(convert(T, i), pool)
+PooledElement{S, T <: Unsigned, ID}(i::Integer, pool::AbstractPool{S,T,ID}) = 
+    PooledElement{S,T,typeof(pool)}(convert(T, i), pool)
 
 
 ##############################################################################
@@ -28,7 +28,7 @@ PooledElement{S, T <: Unsigned, ID}(i::Integer, pool::Pool{S,T,ID}) =
 ##
 ##############################################################################
 
-function pelement{S, T <: Unsigned, ID}(pool::Pool{S,T,ID}, s::S) 
+function pelement{S, T <: Unsigned}(pool::AbstractPool{S,T}, s::S) 
     i = get!(pool, s)
     PooledElement(i, pool)
 end
@@ -39,6 +39,8 @@ end
 ## PooledElement Base utilities
 ##
 ##############################################################################
+
+Base.show(io::IO, x::PooledElement) = isnull(x) ? print(io, "#NULL") : print(io, x.pool[x.level])
 
 Base.isnull(x::PooledElement) = x.level == 0
 Base.isnull{T <: PooledElement}(x::AbstractArray{T}, I::Integer...) = x[I...].level == 0

@@ -6,8 +6,8 @@
 ##
 ##############################################################################
 
-typealias PooledStringVector{S,T,ID} PooledStringArray{S,1,T,ID}
-typealias PooledStringMatrix{S,T,ID} PooledStringArray{S,2,T,ID}
+typealias PooledStringVector{S,T,P} PooledStringArray{S,1,T,P}
+typealias PooledStringMatrix{S,T,P} PooledStringArray{S,2,T,P}
 
 
 ##############################################################################

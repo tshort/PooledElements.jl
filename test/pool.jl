@@ -30,6 +30,14 @@ b = Pool()
 @test a != b
 @test a == a
 
+a = Pool(UInt8, ["x", "y", "z"])
+@test isa(a, Pool{ASCIIString,UInt8})
+@test levels(a) == ["x", "y", "z"]
+
+a = Pool(UTF8String["x", "y", "z"])
+@test isa(a, Pool{UTF8String,UInt64})
+@test levels(a) == ["x", "y", "z"]
+
 
 ##############################################################################
 ##

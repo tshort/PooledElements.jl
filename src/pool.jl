@@ -5,7 +5,9 @@
 ##
 ##############################################################################
 
-immutable Pool{S, T <: Unsigned, ID}
+abstract AbstractPool{S, T <: Unsigned, ID}
+
+immutable Pool{S, T <: Unsigned, ID} <: AbstractPool{S, T, ID}
     index::Vector{S}
     invindex::Dict{S,T}
 end
@@ -25,7 +27,17 @@ function Pool{T <: Unsigned, S}(::Type{T}, ::Type{S})
     Pool{S,T,object_id(d)}(T[], d)
 end
 
-Pool(t = UInt, s = UTF8String) = Pool(s, t)
+Pool(t::Type = UInt, s::Type = UTF8String) = Pool(t, s)
+
+function Pool(t::Type, X)
+    p = Pool(t, eltype(X))
+    for x in X
+        push!(p, x)
+    end
+    p
+end
+Pool(X) = Pool(UInt, X)
+          
 
 ##############################################################################
 ##
@@ -68,6 +80,28 @@ function Base.get!{S}(p::Pool{S}, x)
     end
     p.invindex[y]
 end
+
+
+##############################################################################
+##
+## Utilities
+##
+##############################################################################
+
+levels(p::Pool) = p.index
+
+function rename(p::Pool, args...)
+    newpool = copy(p)
+    for (k,v) in args
+        i = newpool.invindex[k]
+        newpool.index[i] = v
+        newpool.invindex[v] = i
+        delete!(newpool.invindex, k)
+    end
+    newpool
+end
+
+
 
 ##############################################################################
 ##
