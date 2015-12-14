@@ -51,8 +51,7 @@ end
 
 function JLD.writeas(x::PooledString)
     if x === __GLOBAL_POOL__
-        y = repool(x, Pool())
-        GlobalPooledStringSerializer(string(y))
+        GlobalPooledStringSerializer(string(x))
     else
         PooledStringSerializer(x.level, x.pool)
     end

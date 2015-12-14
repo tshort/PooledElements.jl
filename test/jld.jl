@@ -12,7 +12,7 @@ a = PooledStringArray(["asdf", "hello", "x"])
 b = PooledStringArray(["a", "b", "c"])
 nullify!(b, 2)
 c = PooledStringArray(p, ["x", "y", "z"])
-A = [PooledString(), pstring("pstring 1")]
+A = [PooledString(), pstring("pstring 1"), pstring(p, "hello")]
 p2 = Pool()
 push!(p2, "hello")
 
@@ -23,7 +23,7 @@ d = load(fname)
 @test a == d["a"]
 @test b == d["b"]
 @test c == d["c"]
-@test length(d["c"].pool) == 4
+@test length(d["c"].pool) == 5
 @test d["a"].pool === PooledElements.__GLOBAL_POOL__
 
 

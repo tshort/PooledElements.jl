@@ -198,6 +198,7 @@ x = PooledStringArray(Pool(), ["c", "a", "x"])
 y = PooledStringArray(Pool(), ["x", "a", "y"])
 z = repool(x, y.pool)
 @test x == z
+@test length(x.pool) == 3
 @test length(y.pool) == 4
 @test length(z.pool) == 4
 @test levels(z) == UTF8String["x", "a", "y", "c"]
@@ -213,10 +214,9 @@ zz = rename(z, "a" => "apple", "b" => "banana")
 @test levels(z) == ["a", "b", "c"]
 @test levels(zz) == ["apple", "banana", "c"]
 
-x = PooledStringArray(Pool(), ["a", "b", "c"])
-x = PooledStringArray(x.pool, ["x23", "y23", "z23"])
-z = repool(x)
-@test x == z
+x = PooledStringArray(["a", "b", "c"])
+x = repool!(x, Pool())  # Note: don't just do `repool!(x, Pool())`
+@test length(x.pool) == 3
 
 
 

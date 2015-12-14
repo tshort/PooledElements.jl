@@ -32,7 +32,7 @@ export Pool,
        PooledString, 
        PooledStringArray
 
-export pstring, repool, levels, rename
+export pstring, repool, repool!, levels, rename
 
 # Re-exports from NullableArrays
 export dropnull,

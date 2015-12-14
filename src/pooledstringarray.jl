@@ -146,31 +146,36 @@ function uniqueints{U <: Integer, T}(vs::AbstractVector{U}, ::Type{T}, ex=extrem
     end
     res
 end
-function repool{S <: AbstractString, T <: Unsigned}(
-                     a::PooledStringArray, 
-                     newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
+function repool!{S <: AbstractString, T <: Unsigned}(
+                      a::PooledStringArray, 
+                      newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
     mapvec = Array(T, length(a.pool))
     uniquerefs = uniqueints(a.refs, UInt, (1,length(a.pool))) 
     for i in uniquerefs
         mapvec[i] = get!(newpool, a.pool.index[i])
     end
-    newrefs = zeros(T, length(a))
     for i in 1:length(a)
         j = a.refs[i]
         if j != 0 
-            newrefs[i] = mapvec[j]
+            a.refs[i] = mapvec[j]
         end
     end
-    PooledStringArray(newrefs, newpool)
+    PooledStringArray(a.refs, newpool)
+end
+function repool{S <: AbstractString, T <: Unsigned}(
+                     a::PooledStringArray, 
+                     newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
+    repool!(copy(a), newpool)
 end
 ## If pools match, return the original:
-repool{S <: AbstractString, N, T <: Unsigned, ID}(
+repool!{S <: AbstractString, N, T <: Unsigned, ID}(
             a::PooledStringArray{S,N,T,AbstractPool{S,T,ID}}, 
             newpool::AbstractPool{S,T,ID}=__GLOBAL_POOL__) = a
 
 
 ## More to think about:
 ##
+## - repool!
 ## - rename(psa, "item 1" => "new name for item 1")
 ## - unique(psa) - return Array or PSA?
 
