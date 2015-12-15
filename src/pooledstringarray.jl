@@ -5,6 +5,88 @@
 ##
 ##############################################################################
 
+"""
+```julia
+PooledStringArray{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool} <: 
+        AbstractArray{PooledString{S,T,P},N}
+```
+
+An AbstractArray that "pools" quantities to reduce storage and map to integers.
+The Pool is a type parameter to facilitate use of different pools.
+PooledStringArrays can also indicate missing values when the reference to the
+pool is zero.
+
+### Constructors / converters
+
+The core constructor is:
+
+```julia
+PooledStringArray{S <: AbstractString, N, T <: Unsigned}(refs::Array{T,N}, p::AbstractPool{S,T})
+```
+
+Several constructors are available that take AbstractPools and AbstractArrays:
+
+```julia
+PooledStringArray{S <: AbstractString, T <: Unsigned}(p::AbstractPool{S,T} = __GLOBAL_POOL__)
+PooledStringArray{S <: AbstractString, T <: Unsigned}(p::AbstractPool{S,T}, dims::Integer...)
+PooledStringArray(dims::Integer...)
+PooledStringArray{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool}(x::AbstractArray{PooledString{S,T,P},N})
+PooledStringArray{S <: AbstractString}(x::AbstractArray{S})
+PooledStringArray{S <: AbstractString, T <: Unsigned}(t::Type{T}, x::AbstractArray{S})
+PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractArray{S})
+```
+
+### Type parameters
+
+* `S` : the elementary type of stored elements
+* `N` : the number of dimensions of the array
+* `T` : the integer type used for mapping elements to integers
+* `P` : the type of the AbstractPool
+
+### Arguments
+
+* `refs` : unsigned integer references to the pool
+* `p` : the pool of values, defaulting to the global string pool
+* `dims` : the number of dimensions for the result
+* `x` : an AbstractArray to be converted
+* `t` : unsigned integer type for the AbstractPool used
+
+Constructors using `dims` return a PooledStringArray of nulls.
+
+### Main methods
+
+* `getindex(x, i...)` 
+* `setindex!(x, s, i...)` 
+* `size(x)` 
+* `similar(x, dims...)` 
+* `levels(x)` : the levels from the pool used by `x`
+* `rename(x, args...)` : rename the strings in the pool used by `x`
+* `isnull(x, i...)` : is `x` null at position `i...`
+* `anynull(x)` : whether `x` is null at any position 
+* `allnull(x)` : whether `x` is null at all positions
+* `nullify!(x, i...)` : set location `i...` in `x` to null
+* `repool(x, newpool)` : a new PooledStringArray based on `x` using `newpool`
+* `repool!(x, newpool)` : a new PooledStringArray based on `x` using `newpool`,
+  reusing the references in `x`
+
+### PooledStringVector
+
+Type aliases are included for `PooledStringVector` and `PooledStringMatrix`.
+
+PooledStringVectors support many AbstractVector methods, including `push!`, 
+`pop!`, `unshift!`, `shift!`, `splice!`, `deleteat!`, `resize!`, `append!`, 
+`prepend!`, `sizehint!`, and `reverse!`. NullableVector methods supported 
+include `dropnull`, `padnull!`, and `padnull`
+
+### Examples
+
+```julia
+PooledStringArray(3, 2) 
+p = Pool()
+x = PooledStringArray(p, ["a", "b"])
+levels(x)
+```
+"""
 immutable PooledStringArray{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool} <: AbstractArray{PooledString{S,T,P},N}
     refs::Array{T,N}
     pool::P
@@ -53,7 +135,30 @@ end
 ##
 ##############################################################################
 
+"""
+```julia
+levels(x::PooledStringArray)
+```
+
+Return the levels from the AbstractPool used by `x`.
+"""
 levels(p::PooledStringArray) = levels(p.pool)
+
+"""
+```julia
+rename(x::PooledString, args...)
+```
+
+Rename the values in a pool used by `x`, returning the new 
+PooledStringArray with its new AbstractPool.
+
+### Example
+
+```julia
+x = PooledStringArray(Pool(), ["b", "a"])
+y = rename(x, "a" => "apple", "b" => "banana")
+```
+"""
 rename(p::PooledStringArray, args...) = PooledStringArray(p.refs, rename(p.pool, args...))
 
 
@@ -89,9 +194,23 @@ end
 ##
 ##############################################################################
 
+"""
+```julia
+isnull(x::PooledStringArray, i...)
+```
+
+Whether `x` is null at positions `i...`.
+"""
 Base.isnull(X::PooledStringArray, I::Integer...) = X[I...].level == 0
 Base.isnull(X::PooledStringArray, iv::AbstractVector) = [X[i].level == 0 for i in iv]
 
+"""
+```julia
+nullify!(x::PooledStringArray, i...)
+```
+
+Set `x` to null at positions `i...`.
+"""
 NullableArrays.nullify!(X::PooledStringArray, I...) =
     setindex!(X.refs, 0, I...)
 
@@ -126,6 +245,87 @@ end
 ##
 ##############################################################################
 
+"""
+```julia
+repool!(a::PooledStringArray, 
+        newpool::AbstractPool=__GLOBAL_POOL__)
+repool(a::PooledStringArray, 
+       newpool::AbstractPool=__GLOBAL_POOL__)
+```
+
+Create a new PooledStringArray based on `a` and `newpool`. This is useful for 
+reordering pooled values, condensing a pool, and for merging into the global 
+pool.
+
+`repool!` reuses the storage from `a`. NOTE that this corrupts `a`; be sure to 
+use the return value, not `a`. To use `repool!`, the integer reference types of 
+`newpool` and `a` must also match.
+
+### Examples
+
+```julia
+pool = Pool(["x", "y", "z"])
+x = PooledStringArray(pool, ["b", "a"])
+levels(x)
+# Condense a pool to only the unique values in `x`
+y = repool(x, Pool())
+levels(y)
+# Convert `y` to using the global pool
+z = repool(y, PooledElements.__GLOBAL_POOL__)
+levels(z)
+# Sort the levels of `y`
+x = PooledStringArray(Pool(), ["b", "x", "a"])
+levels(x)
+z = repool!(x, Pool(sort(levels(x.pool))))
+levels(z)
+```
+"""
+function repool!{S <: AbstractString, N, T <: Unsigned}(
+                      a::PooledStringArray{S,N,T}, 
+                      newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
+    ## Because `a` and `newpool` are the same type,
+    ## we can reuse `a.refs`.
+    mapvec = Array(T, length(a.pool))
+    uniquerefs = uniqueints(a.refs, UInt, (1,length(a.pool))) 
+    for i in uniquerefs
+        mapvec[i] = get!(newpool, a.pool.index[i])
+    end
+    for i in 1:length(a)
+        j = a.refs[i]
+        if j != 0 
+            a.refs[i] = mapvec[j]
+        end
+    end
+    PooledStringArray(a.refs, newpool)
+end
+function repool{S <: AbstractString, T <: Unsigned}(
+                     a::PooledStringArray, 
+                     newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
+    mapvec = Array(T, length(a.pool))
+    uniquerefs = uniqueints(a.refs, UInt, (1,length(a.pool))) 
+    for i in uniquerefs
+        mapvec[i] = get!(newpool, a.pool.index[i])
+    end
+    newrefs = Array(T, length(a))
+    for i in 1:length(a)
+        j = a.refs[i]
+        if j != 0 
+            newrefs[i] = mapvec[j]
+        else 
+            newrefs[i] = 0
+        end
+    end
+    PooledStringArray(newrefs, newpool)
+end
+## If pools match, return the original:
+repool!{S <: AbstractString, N, T <: Unsigned, ID}(
+            a::PooledStringArray{S,N,T,AbstractPool{S,T,ID}}, 
+            newpool::AbstractPool{S,T,ID}=__GLOBAL_POOL__) = a
+repool{S <: AbstractString, N, T <: Unsigned, ID}(
+            a::PooledStringArray{S,N,T,AbstractPool{S,T,ID}}, 
+            newpool::AbstractPool{S,T,ID}=__GLOBAL_POOL__) = a
+
+
 function uniqueints{U <: Integer, T}(vs::AbstractVector{U}, ::Type{T}, ex=extrema(vs))
     ## uses a counting-type approach to find unique values
     mn, mx = ex
@@ -146,39 +346,10 @@ function uniqueints{U <: Integer, T}(vs::AbstractVector{U}, ::Type{T}, ex=extrem
     end
     res
 end
-function repool!{S <: AbstractString, T <: Unsigned}(
-                      a::PooledStringArray, 
-                      newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
-    mapvec = Array(T, length(a.pool))
-    uniquerefs = uniqueints(a.refs, UInt, (1,length(a.pool))) 
-    for i in uniquerefs
-        mapvec[i] = get!(newpool, a.pool.index[i])
-    end
-    for i in 1:length(a)
-        j = a.refs[i]
-        if j != 0 
-            a.refs[i] = mapvec[j]
-        end
-    end
-    PooledStringArray(a.refs, newpool)
-end
-function repool{S <: AbstractString, T <: Unsigned}(
-                     a::PooledStringArray, 
-                     newpool::AbstractPool{S,T}=__GLOBAL_POOL__)
-    repool!(copy(a), newpool)
-end
-## If pools match, return the original:
-repool!{S <: AbstractString, N, T <: Unsigned, ID}(
-            a::PooledStringArray{S,N,T,AbstractPool{S,T,ID}}, 
-            newpool::AbstractPool{S,T,ID}=__GLOBAL_POOL__) = a
+
+
 
 
 ## More to think about:
 ##
-## - repool!
-## - rename(psa, "item 1" => "new name for item 1")
 ## - unique(psa) - return Array or PSA?
-
-
-
-# asuint(x::PooledStringArray) = x.refs

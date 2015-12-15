@@ -194,7 +194,7 @@ a = PooledStringArray(UInt8, ["x", "y", "z"])
 ##
 ##############################################################################
 
-x = PooledStringArray(Pool(), ["c", "a", "x"])
+x = PooledStringArray(Pool(UInt8), ["c", "a", "x"])
 y = PooledStringArray(Pool(), ["x", "a", "y"])
 z = repool(x, y.pool)
 @test x == z
@@ -204,7 +204,7 @@ z = repool(x, y.pool)
 @test levels(z) == UTF8String["x", "a", "y", "c"]
 
 x = PooledStringArray(Pool(["x", "a"]), ["b", "c", "a"])
-y = repool(x, Pool())
+y = repool(x, Pool(UInt8))
 @test x == y
 @test length(y.pool) == 3
 z = repool(y, Pool(sort(levels(y))))

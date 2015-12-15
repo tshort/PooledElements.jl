@@ -1,9 +1,4 @@
 
-# TO DO's
-# - Add a slot for GC?
-# - Add docstrings
-
-
 module PooledElements
 
 

@@ -6,6 +6,19 @@
 ##
 ##############################################################################
 
+"""
+```julia
+typealias PooledStringVector{S,T,P} PooledStringArray{S,1,T,P}
+typealias PooledStringMatrix{S,T,P} PooledStringArray{S,2,T,P}
+```
+
+Type aliases for PooledStringVector and PooledStringMatrix.
+
+PooledStringVectors support many AbstractVector methods, including `push!`, 
+`pop!`, `unshift!`, `shift!`, `splice!`, `deleteat!`, `resize!`, `append!`, 
+`prepend!`, `sizehint!`, and `reverse!`. NullableVector methods supported 
+include `dropnull`, `padnull!`, and `padnull`
+"""
 typealias PooledStringVector{S,T,P} PooledStringArray{S,1,T,P}
 typealias PooledStringMatrix{S,T,P} PooledStringArray{S,2,T,P}
 
