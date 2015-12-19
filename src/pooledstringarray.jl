@@ -34,6 +34,9 @@ PooledStringArray{S <: AbstractString, N, T <: Unsigned, P <: AbstractPool}(x::A
 PooledStringArray{S <: AbstractString}(x::AbstractArray{S})
 PooledStringArray{S <: AbstractString, T <: Unsigned}(t::Type{T}, x::AbstractArray{S})
 PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractArray{S})
+PooledStringArray{S <: AbstractString}(x::AbstractArray{S}, missing::AbstractArray{Bool})
+PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractArray{S}, missing::AbstractArray{Bool})
+PooledStringArray{S <: AbstractString, T <: Unsigned}(t::Type{T}, x::AbstractArray{S}, missing::AbstractArray{Bool})
 ```
 
 ### Type parameters
@@ -50,6 +53,7 @@ PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractArray{S})
 * `dims` : the number of dimensions for the result
 * `x` : an AbstractArray to be converted
 * `t` : unsigned integer type for the AbstractPool used
+* `missing` : Bool array indicating missing values
 
 Constructors using `dims` return a PooledStringArray of nulls.
 
@@ -76,7 +80,7 @@ Type aliases are included for `PooledStringVector` and `PooledStringMatrix`.
 PooledStringVectors support many AbstractVector methods, including `push!`, 
 `pop!`, `unshift!`, `shift!`, `splice!`, `deleteat!`, `resize!`, `append!`, 
 `prepend!`, `sizehint!`, and `reverse!`. NullableVector methods supported 
-include `dropnull`, `padnull!`, and `padnull`
+include `dropnull`, `padnull!`, and `padnull`.
 
 ### Examples
 
@@ -126,6 +130,21 @@ function PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractA
         psa[i] = x[i] 
     end
     psa
+end
+function PooledStringArray{S <: AbstractString}(pool::AbstractPool, x::AbstractArray{S}, missing::AbstractArray{Bool})
+    psa = PooledStringArray(pool, size(x)...)
+    for i in eachindex(x)
+        if !missing[i]
+            psa[i] = x[i] 
+        end
+    end
+    psa
+end
+function PooledStringArray{S <: AbstractString, T <: Unsigned}(t::Type{T}, x::AbstractArray{S}, missing::AbstractArray{Bool})
+    PooledStringArray(Pool(T,S), x, missing)
+end
+function PooledStringArray{S <: AbstractString}(x::AbstractArray{S}, missing::AbstractArray{Bool})
+    PooledStringArray(__GLOBAL_POOL__, x, missing)
 end
 
 
@@ -350,6 +369,11 @@ end
 
 
 
-## More to think about:
+## More to think about--probably can make all of the following faster:
 ##
 ## - unique(psa) - return Array or PSA?
+## - sort(psa)
+## - sortperm(psa)
+## - in(item, psa)
+## - indexin(psa, psa1)
+## - findin(psa, psa1)

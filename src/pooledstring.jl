@@ -69,6 +69,41 @@ pstring("hello", "world")
 pstring(p, "hello", "world")
 levels(p)
 ```
+
+### Notes
+
+With promotion and conversion, PooledString's are converted to UTF8String's. 
+This happens when PooledString's are combined with other string types and with
+PooledString's using a different pool. Here are some examples:
+
+```julia
+[pstring("hi"), pstring("bye")]          #  => Vector{Pooled String} 
+[pstring("hi"), "bye"]                   #  => Vector{UTF8String} 
+[pstring("hi"), pstring(Pool(), "bye")]  #  => Vector{UTF8String} 
+pstring("hi") == pstring(Pool(), "hi")   #  => true
+pstring("hi") == "hi"                    #  => true
+pstring("a") < "b"                       #  => true
+```
+
+Missing values are also important to consider with promotion and conversion.
+`PooledString()` is a null PooledString. When promoted to UTF8String, it becomes
+"__NULL__". That is important for comparisons. Also, null PooledStrings are 
+treated as equal during comparisons, even if the pools are different. The 
+UTF8String value of a null PooledString is chosen with a leading UTF-8 character
+to make is sort to the end. For specific treatment of missing values, use
+`isnull` to check for missing values.
+
+```julia
+PooledString() == PooledString()           #  => true
+PooledString() == PooledString(0,Pool())   #  => true  (different pools)
+PooledString() < PooledString()            #  => false
+PooledString() == "__NULL__"              #  => true - DON'T USE - use `isnull`
+sort([PooledString(), pstring("z"), pstring("a")])
+     #  =>   Vector{PooledString}: ["a", "z", #NULL]
+sort([PooledString(), "z", "a"])
+     #  =>   Vector{UTF8String}: ["a", "z", "__NULL__"]
+```
+
 """
 immutable PooledString{S <: AbstractString, T <: Unsigned, P <: AbstractPool} <: AbstractString
     level::T
@@ -172,11 +207,11 @@ rename(p::PooledString, args...) = PooledString(p.level. rename(p.pool, args...)
 string(x::PooledString{S})
 ```
 
-Return a string of type `S`. Note that if `x` is null, the string "__NULL__" 
+Return a string of type `S`. Note that if `x` is null, the string "__NULL__" 
 is returned.
 """
 Base.string{S <: AbstractString}(x::PooledString{S}) = 
-    x.level != 0 ? x.pool[x.level] : convert(S, "__NULL__")
+    x.level != 0 ? x.pool[x.level] : convert(S, "__NULL__")
 
 Base.next(s::PooledString, i::Int) = next(string(s), i)
 
