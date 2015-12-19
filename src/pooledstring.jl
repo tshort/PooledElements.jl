@@ -90,14 +90,14 @@ Missing values are also important to consider with promotion and conversion.
 "__NULL__". That is important for comparisons. Also, null PooledStrings are 
 treated as equal during comparisons, even if the pools are different. The 
 UTF8String value of a null PooledString is chosen with a leading UTF-8 character
-to make is sort to the end. For specific treatment of missing values, use
+to make it sort to the end. For specific treatment of missing values, use
 `isnull` to check for missing values.
 
 ```julia
 PooledString() == PooledString()           #  => true
 PooledString() == PooledString(0,Pool())   #  => true  (different pools)
 PooledString() < PooledString()            #  => false
-PooledString() == "__NULL__"              #  => true - DON'T USE - use `isnull`
+PooledString() == "__NULL__"              #  => true - DON'T USE - use `isnull` instead
 sort([PooledString(), pstring("z"), pstring("a")])
      #  =>   Vector{PooledString}: ["a", "z", #NULL]
 sort([PooledString(), "z", "a"])
