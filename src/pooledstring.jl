@@ -164,9 +164,9 @@ end
 pstring{S <: AbstractString}(s::S) = pstring(__GLOBAL_POOL__, String(s))
 
 pstring{S <: AbstractString}(pool::AbstractPool{S}, s...) = 
-    pstring(pool, String(string(s...)))
+    pstring(pool, string(s...))
     
-pstring(s...) = pstring(__GLOBAL_POOL__, String(string(s...)))
+pstring(s...) = pstring(__GLOBAL_POOL__, string(s...))
 
 
 ##############################################################################
