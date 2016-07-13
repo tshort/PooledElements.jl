@@ -72,24 +72,24 @@ levels(p)
 
 ### Notes
 
-With promotion and conversion, PooledString's are converted to UTF8String's. 
+With promotion and conversion, PooledString's are converted to String's. 
 This happens when PooledString's are combined with other string types and with
 PooledString's using a different pool. Here are some examples:
 
 ```julia
 [pstring("hi"), pstring("bye")]          #  => Vector{Pooled String} 
-[pstring("hi"), "bye"]                   #  => Vector{UTF8String} 
-[pstring("hi"), pstring(Pool(), "bye")]  #  => Vector{UTF8String} 
+[pstring("hi"), "bye"]                   #  => Vector{String} 
+[pstring("hi"), pstring(Pool(), "bye")]  #  => Vector{String} 
 pstring("hi") == pstring(Pool(), "hi")   #  => true
 pstring("hi") == "hi"                    #  => true
 pstring("a") < "b"                       #  => true
 ```
 
 Missing values are also important to consider with promotion and conversion.
-`PooledString()` is a null PooledString. When promoted to UTF8String, it becomes
+`PooledString()` is a null PooledString. When promoted to String, it becomes
 "__NULL__". That is important for comparisons. Also, null PooledStrings are 
 treated as equal during comparisons, even if the pools are different. The 
-UTF8String value of a null PooledString is chosen with a leading UTF-8 character
+String value of a null PooledString is chosen with a leading UTF-8 character
 to make it sort to the end. For specific treatment of missing values, use
 `isnull` to check for missing values.
 
@@ -101,7 +101,7 @@ PooledString() == "__NULL__"              #  => true - DON'T USE - use `isnul
 sort([PooledString(), pstring("z"), pstring("a")])
      #  =>   Vector{PooledString}: ["a", "z", #NULL]
 sort([PooledString(), "z", "a"])
-     #  =>   Vector{UTF8String}: ["a", "z", "__NULL__"]
+     #  =>   Vector{String}: ["a", "z", "__NULL__"]
 ```
 
 """
@@ -161,12 +161,12 @@ function pstring{S <: AbstractString, T <: Unsigned}(pool::AbstractPool{S,T}, s:
     PooledString(i, pool)
 end
 
-pstring{S <: AbstractString}(s::S) = pstring(__GLOBAL_POOL__, utf8(s))
+pstring{S <: AbstractString}(s::S) = pstring(__GLOBAL_POOL__, String(s))
 
 pstring{S <: AbstractString}(pool::AbstractPool{S}, s...) = 
-    pstring(pool, utf8(string(s...)))
+    pstring(pool, string(s...))
     
-pstring(s...) = pstring(__GLOBAL_POOL__, utf8(string(s...)))
+pstring(s...) = pstring(__GLOBAL_POOL__, string(s...))
 
 
 ##############################################################################
