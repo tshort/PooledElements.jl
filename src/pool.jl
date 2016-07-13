@@ -44,7 +44,7 @@ elements.
 Pool{S, T <: Unsigned, ID}()
 Pool{S, T <: Unsigned}(index::Vector{S}, invindex::Dict{S,T})
 Pool{T <: Unsigned, S}(::Type{T}, ::Type{S})
-Pool(t::Type = UInt, s::Type = UTF8String)
+Pool(t::Type = UInt, s::Type = String)
 Pool(t::Type = UInt, X)
 ```
 
@@ -83,8 +83,8 @@ Pool(t::Type = UInt, X)
 
 ```julia
 p = Pool(UInt8, Float64)  # A Float64 pool with UInt8 references
-p = Pool()  # The default pool, a UTF8String pool with UInt references
-p = Pool(UInt8, ["x", "y", "z"])  # An ASCIIString pool with UInt8 references
+p = Pool()  # The default pool, a String pool with UInt references
+p = Pool(UInt8, ["x", "y", "z"])  # An String pool with UInt8 references
 get!(p, "a")  # 4
 get!(p, "y")  # 2
 length(p)  # 4
@@ -110,7 +110,7 @@ function Pool{T <: Unsigned, S}(::Type{T}, ::Type{S})
     Pool{S,T,object_id(d)}(T[], d)
 end
 
-Pool(t::Type = UInt, s::Type = UTF8String) = Pool(t, s)
+Pool(t::Type = UInt, s::Type = String) = Pool(t, s)
 
 function Pool(t::Type, X)
     p = Pool(t, eltype(X))

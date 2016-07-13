@@ -27,15 +27,15 @@ a = PooledString(1, p)
 
 a = pstring()
 @test a == ""
-@test isa(a, PooledString{UTF8String,UInt64})
+@test isa(a, PooledString{String,UInt64})
 
 a = pstring("test")
 @test a == "test"
-@test isa(a, PooledString{UTF8String,UInt64})
+@test isa(a, PooledString{String,UInt64})
 
 a = pstring(Pool(UInt8), 27, "X")
 @test a == "27X"
-@test isa(a, PooledString{UTF8String,UInt8})
+@test isa(a, PooledString{String,UInt8})
 
 a = pstring("test")
 b = pstring(Pool(), "test")
@@ -49,7 +49,7 @@ x = [a, pstring("b")]
 a = pstring("a")
 x = [a; pstring(Pool(), "b")]
 @test !isa(x, Array{typeof(a),1})
-@test isa(x, Array{UTF8String,1})
+@test isa(x, Array{String,1})
 
 a = pstring("x", "y", 2)
 @test a == "xy2"
@@ -64,8 +64,8 @@ a = pstring("x", "y", 2)
 @test pstring("a") < pstring("b")
 @test pstring("a") < "b"
 
-a = convert(ASCIIString, pstring("hello"))
-@test isa(a, ASCIIString)
+a = convert(String, pstring("hello"))
+@test isa(a, String)
 @test a == "hello"
 
 @test endof(pstring("hello")) == endof("hello")
@@ -74,7 +74,7 @@ a = convert(ASCIIString, pstring("hello"))
 
 p = Pool(UInt8, ["x", "y", "z"])
 a = pstring(p, "hello")
-@test isa(a, PooledString{ASCIIString,UInt8})
+@test isa(a, PooledString{String,UInt8})
 @test levels(a) == ["x", "y", "z", "hello"]
 
 

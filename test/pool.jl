@@ -17,9 +17,9 @@ a = Pool(UInt[], Dict{UInt,UInt}())
 @test isa(a, Pool{UInt,UInt})
 
 a = Pool()
-@test isa(a, Pool{UTF8String,UInt64})
+@test isa(a, Pool{String,UInt64})
 a = Pool(UInt8)
-@test isa(a, Pool{UTF8String,UInt8})
+@test isa(a, Pool{String,UInt8})
 a = Pool(UInt8, Float64)
 @test isa(a, Pool{Float64,UInt8})
 a = Pool(UInt8, UInt8)
@@ -31,11 +31,11 @@ b = Pool()
 @test a == a
 
 a = Pool(UInt8, ["x", "y", "z"])
-@test isa(a, Pool{ASCIIString,UInt8})
+@test isa(a, Pool{String,UInt8})
 @test levels(a) == ["x", "y", "z"]
 
-a = Pool(UTF8String["x", "y", "z"])
-@test isa(a, Pool{UTF8String,UInt64})
+a = Pool(String["x", "y", "z"])
+@test isa(a, Pool{String,UInt64})
 @test levels(a) == ["x", "y", "z"]
 
 
